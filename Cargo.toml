@@ -1,0 +1,56 @@
+[package]
+name = "permesi-genesis"
+version = "0.1.0"
+edition = "2021"
+authors = ["Nicolas Embriz <nbari@tequila.io>"]
+description = "Token Zero generator for permesi"
+documentation = "https://github.com/permesi/genesis/blob/main/README.md"
+homepage = "https://github.com/permesi/genesis"
+repository = "https://github.com/permesi/genesis"
+readme = "README.md"
+keywords = ["password", "security", "token"]
+categories = ["web-programming::http-server"]
+license-file = "LICENSE"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+axum = { version = "0.7", features = ["tracing"] }
+built = { version = "0.7", features = ["git2"] }
+clap = { version = "4", features = ["env"] }
+mac_address = "1.1.5"
+openssl = { version = "0.10", optional = true, features = ["vendored"] }
+opentelemetry = "0.21"
+opentelemetry-otlp = { version = "0.14", features = ["tls-roots", "tls"] }
+opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
+rand = "0.8.5"
+reqwest = { version = "0.11", features = ["json"] }
+secrecy = "0.8"
+serde = "1.0"
+serde_json = "1.0"
+sqlx = { version = "0.7.3", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+] }
+temp-env = "0.3.6"
+tokio = { version = "1", features = ["full"] }
+tonic = "0.10"
+tower = "0.4"
+tower-http = { version = "0.5", features = [
+    "trace",
+    "propagate-header",
+    "set-header",
+] }
+tracing = "0.1"
+tracing-opentelemetry = "0.22"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+url = "2.5"
+utoipa = { version = "4", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "6", features = ["axum"] }
+uuid = { version = "1.7", features = ["v1", "v4"] }
+
+[build-dependencies]
+built = "0.7"
