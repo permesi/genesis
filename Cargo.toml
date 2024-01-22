@@ -53,4 +53,4 @@ utoipa-swagger-ui = { version = "6", features = ["axum"] }
 uuid = { version = "1.7", features = ["v1", "v4"] }
 
 [build-dependencies]
-built = "0.7"
+built = { version = "0.7", features = ["git2"] }

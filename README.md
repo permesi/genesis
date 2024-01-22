@@ -1,2 +1,2 @@
 # genesis
-Token generator
+Token Zero generator

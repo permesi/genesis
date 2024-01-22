@@ -26,6 +26,10 @@ pub fn validator_log_level() -> ValueParser {
     })
 }
 
+pub mod built_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
+
 pub fn new() -> Command {
     let styles = Styles::styled()
         .header(AnsiColor::Yellow.on_default() | Effects::BOLD)
@@ -34,7 +38,7 @@ pub fn new() -> Command {
         .placeholder(AnsiColor::Green.on_default());
 
     Command::new("genesis")
-        .about("Identity and Access Management")
+        .about(env!("CARGO_PKG_DESCRIPTION"))
         .version(env!("CARGO_PKG_VERSION"))
         .color(ColorChoice::Auto)
         .styles(styles)
@@ -44,7 +48,7 @@ pub fn new() -> Command {
                 .long("port")
                 .help("Port to listen on")
                 .default_value("8080")
-                .env("genesis_PORT")
+                .env("GENESIS_PORT")
                 .value_parser(clap::value_parser!(u16)),
         )
         .arg(
@@ -52,42 +56,42 @@ pub fn new() -> Command {
                 .short('d')
                 .long("dsn")
                 .help("Database connection string")
-                .env("genesis_DSN")
+                .env("GENESIS_DSN")
                 .required(true),
         )
         .arg(
             Arg::new("vault-url")
                 .long("vault-url")
                 .help("Vault approle login URL, example: https://vault.tld:8200/v1/auth/<approle>/login")
-                .env("genesis_VAULT_URL")
+                .env("GENESIS_VAULT_URL")
                 .required(true),
         )
         .arg(
             Arg::new("vault-role-id")
                 .long("vault-role-id")
                 .help("Vault role id")
-                .env("genesis_VAULT_ROLE_ID")
+                .env("GENESIS_VAULT_ROLE_ID")
                 .required(true),
         )
         .arg(
             Arg::new("vault-secret-id")
                 .long("vault-secret-id")
                 .help("Vault secret id")
-                .env("genesis_VAULT_SECRET_ID")
+                .env("GENESIS_VAULT_SECRET_ID")
                 .required_unless_present("vault-wrapped-token")
         )
         .arg(
             Arg::new("vault-wrapped-token")
                 .long("vault-wrapped-token")
                 .help("Vault wrapped token")
-                .env("genesis_VAULT_WRAPPED_TOKEN")
+                .env("GENESIS_VAULT_WRAPPED_TOKEN")
         )
         .arg(
             Arg::new("verbosity")
                 .short('v')
                 .long("verbose")
                 .help("Verbosity level: ERROR, WARN, INFO, DEBUG, TRACE (default: ERROR)")
-                .env("genesis_LOG_LEVEL")
+                .env("GENESIS_LOG_LEVEL")
                 .global(true)
                 .action(clap::ArgAction::Count)
                 .value_parser(validator_log_level()),
@@ -105,7 +109,7 @@ mod tests {
         assert_eq!(command.get_name(), "genesis");
         assert_eq!(
             command.get_about().unwrap().to_string(),
-            "Identity and Access Management"
+            env!("CARGO_PKG_DESCRIPTION")
         );
         assert_eq!(
             command.get_version().unwrap().to_string(),
@@ -159,15 +163,15 @@ mod tests {
     fn test_check_env() {
         temp_env::with_vars(
             [
-                ("genesis_VAULT_URL", Some("https://vault.tld:8200")),
-                ("genesis_VAULT_ROLE_ID", Some("role_id")),
-                ("genesis_VAULT_SECRET_ID", Some("secret_id")),
-                ("genesis_PORT", Some("443")),
+                ("GENESIS_VAULT_URL", Some("https://vault.tld:8200")),
+                ("GENESIS_VAULT_ROLE_ID", Some("role_id")),
+                ("GENESIS_VAULT_SECRET_ID", Some("secret_id")),
+                ("GENESIS_PORT", Some("443")),
                 (
-                    "genesis_DSN",
+                    "GENESIS_DSN",
                     Some("postgres://user:password@localhost:5432/genesis"),
                 ),
-                ("genesis_LOG_LEVEL", Some("info")),
+                ("GENESIS_LOG_LEVEL", Some("info")),
             ],
             || {
                 let command = new();
@@ -195,12 +199,12 @@ mod tests {
         for (index, &level) in levels.iter().enumerate() {
             temp_env::with_vars(
                 [
-                    ("genesis_LOG_LEVEL", Some(level)),
-                    ("genesis_VAULT_URL", Some("http://vault.tld:8200")),
-                    ("genesis_VAULT_ROLE_ID", Some("role_id")),
-                    ("genesis_VAULT_SECRET_ID", Some("secret_id")),
+                    ("GENESIS_LOG_LEVEL", Some(level)),
+                    ("GENESIS_VAULT_URL", Some("http://vault.tld:8200")),
+                    ("GENESIS_VAULT_ROLE_ID", Some("role_id")),
+                    ("GENESIS_VAULT_SECRET_ID", Some("secret_id")),
                     (
-                        "genesis_DSN",
+                        "GENESIS_DSN",
                         Some("postgres://user:password@localhost:5432/genesis"),
                     ),
                 ],
@@ -221,7 +225,7 @@ mod tests {
         // loop cover all possible value_parse
         let levels = vec!["error", "warn", "info", "debug", "trace"];
         for (index, _) in levels.iter().enumerate() {
-            temp_env::with_vars([("genesis_LOG_LEVEL", None::<String>)], || {
+            temp_env::with_vars([("GENESIS_LOG_LEVEL", None::<String>)], || {
                 let mut args = vec![
                     "genesis".to_string(),
                     "--dsn".to_string(),
