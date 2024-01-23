@@ -29,9 +29,9 @@ pub async fn root(method: Method, Extension(pool): Extension<PgPool>) -> impl In
 
     let token = Ulid::new();
 
-    let query = "INSERT INTO tokens (id) VALUES ($1)";
+    let query = "INSERT INTO tokens (token) VALUES ($1)";
     sqlx::query(query)
-        .bind(token.to_bytes())
+        .bind(token.to_string())
         .execute(&pool)
         .await
         .map_err(|err| {
