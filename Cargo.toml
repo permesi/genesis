@@ -47,6 +47,7 @@ tower-http = { version = "0.5", features = [
 tracing = "0.1"
 tracing-opentelemetry = "0.22"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+ulid = "1.1"
 url = "2.5"
 utoipa = { version = "4", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "6", features = ["axum"] }

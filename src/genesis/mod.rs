@@ -1,6 +1,6 @@
 use crate::{
     cli::globals::GlobalArgs,
-    genesis::handlers::{health, health::__path_health},
+    genesis::handlers::{health, health::__path_health, root, root::__path_root},
     vault,
 };
 use anyhow::{Context, Result};
@@ -34,7 +34,7 @@ pub const GIT_COMMIT_HASH: &str = if let Some(hash) = built_info::GIT_COMMIT_HAS
 };
 
 #[derive(OpenApi)]
-#[openapi(paths(health), components(schemas(health::Health)))]
+#[openapi(paths(health, root), components(schemas(health::Health, root::Root,)))]
 struct ApiDoc;
 
 pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
@@ -67,7 +67,7 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
 
     let app = Router::new()
         .route("/health", get(handlers::health).options(handlers::health))
-        .route("/", get(|| async { "Hello, World!" }))
+        .route("/", get(handlers::root))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
         .layer(
             ServiceBuilder::new()
