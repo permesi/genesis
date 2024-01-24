@@ -1,6 +1,8 @@
 use crate::{
     cli::globals::GlobalArgs,
-    genesis::handlers::{health, health::__path_health, root, root::__path_root},
+    genesis::handlers::{
+        headers::__path_headers, health, health::__path_health, root, root::__path_root,
+    },
     vault,
 };
 use anyhow::{Context, Result};
@@ -34,7 +36,10 @@ pub const GIT_COMMIT_HASH: &str = if let Some(hash) = built_info::GIT_COMMIT_HAS
 };
 
 #[derive(OpenApi)]
-#[openapi(paths(health, root), components(schemas(health::Health, root::Token,)))]
+#[openapi(
+    paths(health, headers, root),
+    components(schemas(health::Health, root::Token))
+)]
 struct ApiDoc;
 
 pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
@@ -65,10 +70,13 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
         .await
         .context("Failed to connect to database")?;
 
+    let swagger = SwaggerUi::new("/ui/api-docs").url("/api-docs/openapi.json", ApiDoc::openapi());
+
     let app = Router::new()
         .route("/health", get(handlers::health).options(handlers::health))
         .route("/", get(handlers::root))
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
+        .route("/headers", get(handlers::headers))
+        .merge(swagger)
         .layer(
             ServiceBuilder::new()
                 .layer(Extension(pool))

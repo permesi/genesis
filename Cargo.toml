@@ -2,7 +2,7 @@
 name = "permesi-genesis"
 version = "0.1.0"
 edition = "2021"
-authors = ["Nicolas Embriz <nbari@tequila.io>"]
+authors = ["Team Permesi <team@permesi.dev>"]
 description = "Token Zero generator for permesi"
 documentation = "https://github.com/permesi/genesis/blob/main/README.md"
 homepage = "https://github.com/permesi/genesis"
@@ -34,6 +34,7 @@ sqlx = { version = "0.7.3", features = [
     "runtime-tokio",
     "tls-rustls",
     "postgres",
+    "ipnetwork",
 ] }
 temp-env = "0.3.6"
 tokio = { version = "1", features = ["full"] }
