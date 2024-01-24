@@ -10,7 +10,7 @@ use ulid::Ulid;
 use utoipa::ToSchema;
 
 #[derive(ToSchema, Serialize, Deserialize, Debug)]
-pub struct Root {
+pub struct Token {
     token: String,
 }
 
@@ -18,18 +18,15 @@ pub struct Root {
     get,
     path= "/",
     responses (
-        (status = 200, description = "Database connection is healthy", body = [Health]),
-        (status = 503, description = "Database connection is unhealthy", body = [Health])
+        (status = 200, description = "Return token", body = [Token]),
+        (status = 500, description = "Error creating the token", body = [Token])
     )
 )]
-// axum handler for root path /
 #[instrument]
 pub async fn root(method: Method, Extension(pool): Extension<PgPool>) -> impl IntoResponse {
-    debug!(method = ?method, "HTTP request method: {}", method);
-
     let token = Ulid::new();
 
-    let query = "INSERT INTO tokens (token) VALUES ($1)";
+    let query = "INSERT INTO tokens (token) VALUES (?)";
     sqlx::query(query)
         .bind(token.to_string())
         .execute(&pool)
@@ -39,7 +36,7 @@ pub async fn root(method: Method, Extension(pool): Extension<PgPool>) -> impl In
             (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
         })
         .map(|_| {
-            let token = Root {
+            let token = Token {
                 token: token.to_string(),
             };
 
