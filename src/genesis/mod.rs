@@ -38,7 +38,7 @@ pub const GIT_COMMIT_HASH: &str = if let Some(hash) = built_info::GIT_COMMIT_HAS
 #[derive(OpenApi)]
 #[openapi(
     paths(health, headers, root),
-    components(schemas(health::Health, root::Token))
+    components(schemas(health::Health, root::Client, root::Token))
 )]
 struct ApiDoc;
 

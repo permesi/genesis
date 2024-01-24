@@ -18,7 +18,7 @@ pub struct Token {
     token: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(ToSchema, Debug, Deserialize)]
 pub struct Client {
     uuid: String,
 }
@@ -26,8 +26,9 @@ pub struct Client {
 #[utoipa::path(
     post,
     path= "/",
+    request_body = Client,
     responses (
-        (status = 200, description = "Return token", body = [Token]),
+        (status = 200, description = "Return token", body = [Token], content_type = "application/json"),
         (status = 500, description = "Error creating the token", body = [Token])
     )
 )]
