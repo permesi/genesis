@@ -1,7 +1,8 @@
 use axum::{
     extract::Extension,
     http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Json},
+    response::IntoResponse,
+    Json,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
@@ -10,14 +11,20 @@ use std::net::IpAddr;
 use tracing::{debug, error, instrument};
 use ulid::Ulid;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(ToSchema, Serialize, Deserialize, Debug)]
 pub struct Token {
     token: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Client {
+    uuid: String,
+}
+
 #[utoipa::path(
-    get,
+    post,
     path= "/",
     responses (
         (status = 200, description = "Return token", body = [Token]),
@@ -25,7 +32,18 @@ pub struct Token {
     )
 )]
 #[instrument]
-pub async fn root(Extension(pool): Extension<PgPool>, headers: HeaderMap) -> impl IntoResponse {
+pub async fn root(
+    Extension(pool): Extension<PgPool>,
+    headers: HeaderMap,
+    Json(payload): Json<Client>,
+) -> impl IntoResponse {
+    let client_uuid = Uuid::parse_str(&payload.uuid).unwrap_or_else(|err| {
+        error!("Failed to parse uuid: {}", err);
+        Uuid::nil()
+    });
+
+    debug!("Client UUID: {}", client_uuid);
+
     let token = Ulid::new();
 
     // Get the IP address from the headers using the environment variable if it exists
@@ -43,9 +61,20 @@ pub async fn root(Extension(pool): Extension<PgPool>, headers: HeaderMap) -> imp
     // User-Agent is optional
     let ua = headers.get("User-Agent").and_then(|v| v.to_str().ok());
 
-    let query = "INSERT INTO tokens (token) VALUES ($1) RETURNING id";
+    // get client id from the payload
+    let query = "SELECT id FROM clients WHERE uuid = $1";
+    let client_id = match sqlx::query(query).bind(client_uuid).fetch_one(&pool).await {
+        Ok(row) => row.get::<i32, _>("id"),
+        Err(err) => {
+            error!("Failed to retrieve client id from database: {}", err);
+            0
+        }
+    };
+
+    let query = "INSERT INTO tokens (token, client_id) VALUES ($1, $2) RETURNING id";
     let tx = sqlx::query(query)
         .bind(token.to_string())
+        .bind(client_id)
         .fetch_optional(&pool)
         .await;
 

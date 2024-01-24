@@ -8,7 +8,7 @@ use crate::{
 use anyhow::{Context, Result};
 use axum::{
     http::{HeaderName, HeaderValue},
-    routing::get,
+    routing::{get, post},
     Extension, Router,
 };
 use mac_address::get_mac_address;
@@ -74,7 +74,7 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
 
     let app = Router::new()
         .route("/health", get(handlers::health).options(handlers::health))
-        .route("/", get(handlers::root))
+        .route("/", post(handlers::root))
         .route("/headers", get(handlers::headers))
         .merge(swagger)
         .layer(

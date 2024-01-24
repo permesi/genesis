@@ -8,7 +8,7 @@ CREATE TABLE clients (
     uuid UUID DEFAULT uuid_generate_v4()
 );
 
-INSERT INTO clients (id, name, uuid) VALUES (0, 'unknown', uuid_generate_v4());
+INSERT INTO clients (id, name, uuid) VALUES (0, 'unknown', '00000000-0000-0000-0000-000000000000');
 
 -- Create the table for the tokens
 DROP TABLE IF EXISTS tokens CASCADE;
