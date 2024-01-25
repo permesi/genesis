@@ -1,6 +1,6 @@
 [package]
 name = "permesi-genesis"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Team Permesi <team@permesi.dev>"]
 description = "Token Zero generator for permesi"
@@ -12,8 +12,6 @@ keywords = ["password", "security", "token"]
 categories = ["web-programming::http-server"]
 license-file = "LICENSE"
 build = "build.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1"
