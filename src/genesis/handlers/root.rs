@@ -36,12 +36,25 @@ pub struct Client {
 pub async fn root(
     Extension(pool): Extension<PgPool>,
     headers: HeaderMap,
-    Json(payload): Json<Client>,
+    payload: Option<Json<Client>>,
 ) -> impl IntoResponse {
-    let client_uuid = Uuid::parse_str(&payload.uuid).unwrap_or_else(|err| {
-        error!("Failed to parse uuid: {}", err);
-        Uuid::nil()
-    });
+    let client_uuid = match payload {
+        Some(Json(payload)) => match Uuid::parse_str(&payload.uuid) {
+            Ok(uuid) => uuid,
+            Err(err) => {
+                error!("Failed to parse uuid: {}", err);
+                return Err((StatusCode::BAD_REQUEST, "Invalid UUID format".to_string()));
+            }
+        },
+
+        None => {
+            error!("Failed to parse payload");
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to parse payload".to_string(),
+            ));
+        }
+    };
 
     debug!("Client UUID: {}", client_uuid);
 
@@ -72,50 +85,68 @@ pub async fn root(
         }
     };
 
+    // start transaction
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(err) => {
+            error!("Failed to start transaction: {}", err);
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to start transaction".to_string(),
+            ));
+        }
+    };
+
     let query = "INSERT INTO tokens (token, client_id) VALUES ($1, $2) RETURNING id";
-    let tx = sqlx::query(query)
+    let find_client_id = sqlx::query(query)
         .bind(token.to_string())
         .bind(client_id)
-        .fetch_optional(&pool)
+        .fetch_one(&mut *tx)
         .await;
 
-    match tx {
-        Ok(Some(row)) => {
+    let result = match find_client_id {
+        Ok(row) => {
             let token_id: i64 = row.get("id");
 
             let metadata_query =
                 "INSERT INTO metadata (id, ip_address, country, user_agent) VALUES ($1, $2, $3, $4)";
-
             sqlx::query(metadata_query)
                 .bind(token_id)
                 .bind(ip_address)
                 .bind(country)
                 .bind(ua)
-                .execute(&pool)
+                .execute(&mut *tx)
                 .await
-                .map_err(|err| {
-                    error!("Failed to insert token into database: {}", err);
-                    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-                })
-                .map(|_| {
-                    let token = Token {
+        }
+
+        Err(err) => Err(err),
+    };
+
+    match result {
+        Ok(_) => match tx.commit().await {
+            Ok(_) => {
+                debug!("Token: {}", token);
+
+                Ok((
+                    StatusCode::OK,
+                    Json(Token {
                         token: token.to_string(),
-                    };
+                    }),
+                ))
+            }
 
-                    debug!("Token: {} inserted into database", token.token);
-                    (StatusCode::OK, Json(&token).into_response())
-                })
-        }
-
-        Ok(None) => {
-            error!("Failed to insert token into database");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to retrieve id after inserting token".to_string(),
-            ))
-        }
+            Err(err) => {
+                error!("Failed to commit transaction: {}", err);
+                Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
+            }
+        },
 
         Err(err) => {
+            match tx.rollback().await {
+                Ok(_) => debug!("Rolled back transaction"),
+                Err(err) => error!("Failed to rollback transaction: {}", err),
+            };
+
             error!("Failed to insert token into database: {}", err);
             Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         }
