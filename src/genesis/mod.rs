@@ -1,7 +1,7 @@
 use crate::{
     cli::globals::GlobalArgs,
     genesis::handlers::{
-        headers::__path_headers, health, health::__path_health, root, root::__path_root,
+        headers::__path_headers, health, health::__path_health, token, token::__path_token,
     },
     vault,
 };
@@ -37,8 +37,8 @@ pub const GIT_COMMIT_HASH: &str = if let Some(hash) = built_info::GIT_COMMIT_HAS
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(health, headers, root),
-    components(schemas(health::Health, root::Client, root::Token))
+    paths(health, headers, token),
+    components(schemas(health::Health, token::Client, token::Token))
 )]
 struct ApiDoc;
 
@@ -74,7 +74,7 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
 
     let app = Router::new()
         .route("/health", get(handlers::health).options(handlers::health))
-        .route("/", post(handlers::root))
+        .route("/token", post(handlers::token))
         .route("/headers", get(handlers::headers))
         .merge(swagger)
         .layer(

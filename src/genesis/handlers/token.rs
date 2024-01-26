@@ -33,7 +33,7 @@ pub struct Client {
     )
 )]
 #[instrument]
-pub async fn root(
+pub async fn token(
     Extension(pool): Extension<PgPool>,
     headers: HeaderMap,
     payload: Option<Json<Client>>,
