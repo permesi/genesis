@@ -1,5 +1,5 @@
 use axum::{
-    extract::Extension,
+    extract::{Extension, Query},
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
     Json,
@@ -10,7 +10,7 @@ use std::env;
 use std::net::IpAddr;
 use tracing::{debug, error, instrument};
 use ulid::Ulid;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 #[derive(ToSchema, Serialize, Deserialize, Debug)]
@@ -18,40 +18,44 @@ pub struct Token {
     token: String,
 }
 
-#[derive(ToSchema, Debug, Deserialize)]
-pub struct Client {
-    uuid: String,
+#[derive(IntoParams, Debug, Deserialize, Default)]
+#[into_params(parameter_in = Query)]
+pub struct ClientArgs {
+    // uuid of the client
+    client_id: String,
 }
 
 #[utoipa::path(
-    post,
-    path= "/",
-    request_body = Client,
+    get,
+    path= "/token",
+    params(ClientArgs),
     responses (
-        (status = 200, description = "Return token", body = [Token], content_type = "application/json"),
-        (status = 500, description = "Error creating the token", body = [Token])
+        (status = 200, description = "Return token", body = [Token]),
+        (status = 500, description = "Error creating the token")
     )
 )]
 #[instrument]
 pub async fn token(
     Extension(pool): Extension<PgPool>,
     headers: HeaderMap,
-    payload: Option<Json<Client>>,
+    query: Option<Query<ClientArgs>>,
 ) -> impl IntoResponse {
-    let client_uuid = if let Some(Json(payload)) = payload {
-        match Uuid::parse_str(&payload.uuid) {
-            Ok(uuid) => uuid,
-            Err(err) => {
-                error!("Failed to parse uuid: {}", err);
-                return Err((StatusCode::BAD_REQUEST, "Invalid UUID format".to_string()));
-            }
-        }
+    let args = if let Some(args) = query {
+        Query(args)
     } else {
-        error!("Failed to parse payload");
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to parse payload".to_string(),
-        ));
+        error!("Failed to get query parameters");
+        return Err((StatusCode::BAD_REQUEST, "Missing Client ID".to_string()));
+    };
+
+    let client_uuid = match args.client_id.parse::<Uuid>() {
+        Ok(uuid) => uuid,
+        Err(err) => {
+            error!("Failed to parse uuid: {}", err);
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Invalid Client ID format".to_string(),
+            ));
+        }
     };
 
     debug!("Client UUID: {}", client_uuid);
@@ -122,16 +126,12 @@ pub async fn token(
 
     match result {
         Ok(_) => match tx.commit().await {
-            Ok(()) => {
-                debug!("Token: {}", token);
-
-                Ok((
-                    StatusCode::OK,
-                    Json(Token {
-                        token: token.to_string(),
-                    }),
-                ))
-            }
+            Ok(()) => Ok((
+                StatusCode::OK,
+                Json(Token {
+                    token: token.to_string(),
+                }),
+            )),
 
             Err(err) => {
                 error!("Failed to commit transaction: {}", err);
