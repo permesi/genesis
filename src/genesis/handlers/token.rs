@@ -38,22 +38,20 @@ pub async fn token(
     headers: HeaderMap,
     payload: Option<Json<Client>>,
 ) -> impl IntoResponse {
-    let client_uuid = match payload {
-        Some(Json(payload)) => match Uuid::parse_str(&payload.uuid) {
+    let client_uuid = if let Some(Json(payload)) = payload {
+        match Uuid::parse_str(&payload.uuid) {
             Ok(uuid) => uuid,
             Err(err) => {
                 error!("Failed to parse uuid: {}", err);
                 return Err((StatusCode::BAD_REQUEST, "Invalid UUID format".to_string()));
             }
-        },
-
-        None => {
-            error!("Failed to parse payload");
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to parse payload".to_string(),
-            ));
         }
+    } else {
+        error!("Failed to parse payload");
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to parse payload".to_string(),
+        ));
     };
 
     debug!("Client UUID: {}", client_uuid);
@@ -124,7 +122,7 @@ pub async fn token(
 
     match result {
         Ok(_) => match tx.commit().await {
-            Ok(_) => {
+            Ok(()) => {
                 debug!("Token: {}", token);
 
                 Ok((
@@ -143,7 +141,7 @@ pub async fn token(
 
         Err(err) => {
             match tx.rollback().await {
-                Ok(_) => debug!("Rolled back transaction"),
+                Ok(()) => debug!("Rolled back transaction"),
                 Err(err) => error!("Failed to rollback transaction: {}", err),
             };
 

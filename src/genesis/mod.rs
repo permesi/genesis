@@ -8,6 +8,7 @@ use crate::{
 use anyhow::{Context, Result};
 use axum::{
     http::{HeaderName, HeaderValue},
+    response::Redirect,
     routing::{get, post},
     Extension, Router,
 };
@@ -73,6 +74,7 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
     let swagger = SwaggerUi::new("/ui/api-docs").url("/api-docs/openapi.json", ApiDoc::openapi());
 
     let app = Router::new()
+        .route("/", get(|| async { Redirect::to("https://permesi.dev") }))
         .route("/health", get(handlers::health).options(handlers::health))
         .route("/token", post(handlers::token))
         .route("/headers", get(handlers::headers))
