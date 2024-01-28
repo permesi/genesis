@@ -82,11 +82,14 @@ pub async fn token(
     let query = "SELECT id FROM clients WHERE uuid = $1";
     let client_id = match sqlx::query(query).bind(client_uuid).fetch_one(&pool).await {
         Ok(row) => row.get::<i32, _>("id"),
+
         Err(err) => {
             error!("Failed to retrieve client id from database: {}", err);
             0
         }
     };
+
+    debug!("Client ID: {}", client_id);
 
     // start transaction
     let mut tx = match pool.begin().await {
@@ -100,19 +103,18 @@ pub async fn token(
         }
     };
 
-    let query = "INSERT INTO tokens (token, client_id) VALUES ($1, $2) RETURNING id";
-    let find_client_id = sqlx::query(query)
+    let query = "INSERT INTO tokens (id, client_id) VALUES ($1::ulid, $2) RETURNING id::text";
+    let result = match sqlx::query(query)
         .bind(token.to_string())
         .bind(client_id)
         .fetch_one(&mut *tx)
-        .await;
-
-    let result = match find_client_id {
+        .await
+    {
         Ok(row) => {
-            let token_id: i64 = row.get("id");
+            let token_id: String = row.get("id");
 
             let metadata_query =
-                "INSERT INTO metadata (id, ip_address, country, user_agent) VALUES ($1, $2, $3, $4)";
+                "INSERT INTO metadata (id, ip_address, country, user_agent) VALUES ($1::ulid, $2, $3, $4)";
             sqlx::query(metadata_query)
                 .bind(token_id)
                 .bind(ip_address)
