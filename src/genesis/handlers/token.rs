@@ -32,7 +32,8 @@ pub struct ClientArgs {
     responses (
         (status = 200, description = "Return token", body = [Token]),
         (status = 500, description = "Error creating the token")
-    )
+    ),
+    tag = "token",
 )]
 #[instrument]
 pub async fn token(

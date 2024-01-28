@@ -10,7 +10,8 @@ use tracing::instrument;
     path= "/headers",
     responses (
         (status = 200, description = "headers"),
-    )
+    ),
+    tag = "headers",
 )]
 // axum handler for health
 #[instrument]

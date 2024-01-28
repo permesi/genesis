@@ -39,7 +39,13 @@ pub const GIT_COMMIT_HASH: &str = if let Some(hash) = built_info::GIT_COMMIT_HAS
 #[derive(OpenApi)]
 #[openapi(
     paths(health, headers, token),
-    components(schemas(health::Health, token::Token))
+    components(
+        schemas(health::Health, token::Token)
+    ),
+    tags(
+        (name = "genesis", description = "Token Zero generator API"),
+    )
+
 )]
 struct ApiDoc;
 
