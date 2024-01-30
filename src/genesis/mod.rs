@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use axum::{
     http::{HeaderName, HeaderValue},
     response::Redirect,
-    routing::get,
+    routing::{get, post},
     Extension, Router,
 };
 use mac_address::get_mac_address;
@@ -81,9 +81,10 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
 
     let app = Router::new()
         .route("/", get(|| async { Redirect::to("https://permesi.dev") }))
+        .route("/headers", get(handlers::headers))
         .route("/health", get(handlers::health).options(handlers::health))
         .route("/token", get(handlers::token))
-        .route("/headers", get(handlers::headers))
+        .route("/verify", post(handlers::verify))
         .merge(swagger)
         .layer(
             ServiceBuilder::new()
