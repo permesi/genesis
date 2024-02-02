@@ -23,7 +23,7 @@ CREATE TABLE tokens (
 -- Create the table for the metadata
 DROP TABLE IF EXISTS metadata;
 CREATE TABLE metadata (
-    id ulid PRIMARY KEY REFERENCES tokens(id),
+    id ulid PRIMARY KEY REFERENCES tokens(id) ON DELETE CASCADE,
     ip_address INET,
     country CHAR(2),
     user_agent VARCHAR(255),
