@@ -38,15 +38,18 @@ pub async fn verify(Extension(pool): Extension<PgPool>, payload: Json<Token>) ->
             let valid: bool = row.get("valid");
             if valid {
                 debug!("Token is valid");
+
                 StatusCode::ACCEPTED
             } else {
                 error!("Token is invalid");
+
                 StatusCode::FORBIDDEN
             }
         }
 
         Err(e) => {
             error!("Error while verifying token: {}", e);
+
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

@@ -37,12 +37,14 @@ pub async fn health(method: Method, pool: Extension<PgPool>) -> impl IntoRespons
             Ok(()) => Ok(()),
             Err(error) => {
                 error!("Failed to ping database: {}", error);
+
                 Err(StatusCode::SERVICE_UNAVAILABLE)
             }
         },
 
         Err(error) => {
             error!("Failed to acquire database connection: {}", error);
+
             Err(StatusCode::SERVICE_UNAVAILABLE)
         }
     };
@@ -93,11 +95,13 @@ pub async fn health(method: Method, pool: Extension<PgPool>) -> impl IntoRespons
     match result {
         Ok(()) => {
             debug!("Database connection is healthy");
+
             (StatusCode::OK, headers, body)
         }
 
         Err(status_code) => {
             debug!("Database connection is unhealthy");
+
             (status_code, headers, body)
         }
     }

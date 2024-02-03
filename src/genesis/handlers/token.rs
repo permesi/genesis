@@ -96,6 +96,7 @@ pub async fn token(
         Ok(tx) => tx,
         Err(err) => {
             error!("Failed to start transaction: {}", err);
+
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to start transaction".to_string(),
@@ -138,6 +139,7 @@ pub async fn token(
 
             Err(err) => {
                 error!("Failed to commit transaction: {}", err);
+
                 Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
             }
         },
@@ -145,10 +147,12 @@ pub async fn token(
         Err(err) => {
             match tx.rollback().await {
                 Ok(()) => debug!("Rolled back transaction"),
+
                 Err(err) => error!("Failed to rollback transaction: {}", err),
             };
 
             error!("Failed to insert token into database: {}", err);
+
             Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))
         }
     }
