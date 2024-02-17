@@ -1,6 +1,6 @@
 [package]
 name = "permesi-genesis"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 authors = ["Team Permesi <team@permesi.dev>"]
 description = "Token Zero generator for permesi"
@@ -37,12 +37,13 @@ sqlx = { version = "0.7", features = [
 ] }
 temp-env = "0.3.6"
 tokio = { version = "1", features = ["full"] }
-tonic = "0.10"
+tonic = "0.11"
 tower = "0.4"
 tower-http = { version = "0.5", features = [
     "trace",
     "propagate-header",
     "set-header",
+    "cors",
 ] }
 tracing = "0.1"
 tracing-opentelemetry = "0.22"
