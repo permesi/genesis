@@ -4,6 +4,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
 use std::env;
@@ -16,6 +17,7 @@ use uuid::Uuid;
 #[derive(ToSchema, Serialize, Deserialize, Debug)]
 pub struct Token {
     token: String,
+    expires: i64,
 }
 
 #[derive(IntoParams, Debug, Deserialize, Default)]
@@ -130,12 +132,16 @@ pub async fn token(
 
     match result {
         Ok(_) => match tx.commit().await {
-            Ok(()) => Ok((
-                StatusCode::OK,
-                Json(Token {
+            Ok(()) => {
+                let expiration_time = Utc::now() + Duration::minutes(30);
+
+                let token = Token {
                     token: token.to_string(),
-                }),
-            )),
+                    expires: expiration_time.timestamp(),
+                };
+
+                Ok((StatusCode::OK, Json(token)))
+            }
 
             Err(err) => {
                 error!("Failed to commit transaction: {}", err);

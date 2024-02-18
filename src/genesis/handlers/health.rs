@@ -30,8 +30,6 @@ pub struct Health {
 // axum handler for health
 #[instrument]
 pub async fn health(method: Method, pool: Extension<PgPool>) -> impl IntoResponse {
-    debug!(method = ?method, "HTTP request method: {}", method);
-
     let result = match pool.0.acquire().await {
         Ok(mut conn) => match conn.ping().await {
             Ok(()) => Ok(()),
