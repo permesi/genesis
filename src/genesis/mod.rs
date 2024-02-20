@@ -79,10 +79,8 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
     let app = Router::new()
         .route("/", get(|| async { Redirect::to("https://permesi.dev") }))
         .route("/headers", get(handlers::headers))
-        .route("/health", get(handlers::health).options(handlers::health))
         .route("/token", get(handlers::token))
         .route("/verify", post(handlers::verify))
-        .merge(swagger)
         .layer(
             ServiceBuilder::new()
                 .layer(Extension(pool))
@@ -99,7 +97,9 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
                 ))
                 .layer(TraceLayer::new_for_http())
                 .layer(cors),
-        );
+        )
+        .route("/health", get(handlers::health).options(handlers::health))
+        .merge(swagger);
 
     let listener = TcpListener::bind(format!("::0:{port}")).await?;
 
