@@ -5,6 +5,8 @@ use secrecy::ExposeSecret;
 use url::Url;
 
 /// Handle the create action
+/// # Errors
+/// Returns an error if the action fails
 pub async fn handle(action: Action, globals: &GlobalArgs) -> Result<()> {
     match action {
         Action::Server { port, dsn } => {

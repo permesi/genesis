@@ -7,23 +7,23 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use axum::{
-    http::{HeaderName, HeaderValue, Method},
-    response::Redirect,
+    body::Body,
+    http::{HeaderName, HeaderValue, Method, Request},
     routing::{get, post},
     Extension, Router,
 };
-use mac_address::get_mac_address;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
 use tokio::{net::TcpListener, sync::mpsc};
 use tower::ServiceBuilder;
 use tower_http::{
     cors::{Any, CorsLayer},
-    propagate_header::PropagateHeaderLayer,
+    request_id::PropagateRequestIdLayer,
     set_header::SetRequestHeaderLayer,
     trace::TraceLayer,
 };
-use tracing::info;
+use tracing::{debug_span, info, Span};
+use ulid::Ulid;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -52,6 +52,9 @@ pub const GIT_COMMIT_HASH: &str = if let Some(hash) = built_info::GIT_COMMIT_HAS
 )]
 struct ApiDoc;
 
+/// router
+/// # Errors
+/// Returns an error if the server fails to start
 pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
     // Renew vault token, gracefully shutdown if failed
     let (tx, mut rx) = mpsc::unbounded_channel();
@@ -77,28 +80,24 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
         .allow_origin(Any);
 
     let app = Router::new()
-        .route("/", get(|| async { Redirect::to("https://permesi.dev") }))
         .route("/headers", get(handlers::headers))
         .route("/token", get(handlers::token))
         .route("/verify", post(handlers::verify))
         .layer(
             ServiceBuilder::new()
-                .layer(Extension(pool))
-                .layer(PropagateHeaderLayer::new(HeaderName::from_static(
-                    "x-request-id",
-                )))
                 .layer(SetRequestHeaderLayer::if_not_present(
                     HeaderName::from_static("x-request-id"),
-                    |_req: &_| {
-                        let node_id: [u8; 6] = node_id();
-                        let uuid = uuid::Uuid::now_v1(&node_id);
-                        HeaderValue::from_str(uuid.to_string().as_str()).ok()
-                    },
+                    |_req: &_| HeaderValue::from_str(Ulid::new().to_string().as_str()).ok(),
                 ))
-                .layer(TraceLayer::new_for_http())
-                .layer(cors),
+                .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
+                    "x-request-id",
+                )))
+                .layer(TraceLayer::new_for_http().make_span_with(make_span))
+                .layer(cors)
+                .layer(Extension(pool.clone())),
         )
         .route("/health", get(handlers::health).options(handlers::health))
+        .layer(Extension(pool))
         .merge(swagger);
 
     let listener = TcpListener::bind(format!("::0:{port}")).await?;
@@ -115,14 +114,14 @@ pub async fn new(port: u16, dsn: String, globals: &GlobalArgs) -> Result<()> {
     Ok(())
 }
 
-#[must_use]
-pub fn node_id() -> [u8; 6] {
-    get_mac_address().map_or([0; 6], |mac| {
-        mac.map_or([0; 6], |mac| {
-            let bytes = mac.bytes();
-            let mut node_id = [0; 6];
-            node_id.copy_from_slice(&bytes);
-            node_id
-        })
-    })
+// span
+fn make_span(request: &Request<Body>) -> Span {
+    let headers = request.headers();
+    let path = request.uri().path();
+    let request_id = headers
+        .get("x-request-id")
+        .and_then(|val| val.to_str().ok())
+        .unwrap_or("none");
+
+    debug_span!("http-request", path, ?headers, request_id)
 }

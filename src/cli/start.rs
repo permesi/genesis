@@ -8,39 +8,47 @@ use secrecy::Secret;
 use std::time::Duration;
 use tracing::debug;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::{
+    filter, fmt,
+    layer::{Layer, SubscriberExt},
+    EnvFilter, Registry,
+};
 
 /// Start the CLI
+/// # Errors
+/// Will return an error if the vault role-id or vault url is not provided
 pub async fn start() -> Result<(Action, GlobalArgs)> {
     let matches = commands::new().get_matches();
 
     // vault role-id
-    let vrid = matches
+    let vault_role_id = matches
         .get_one::<String>("vault-role-id")
         .map(|s: &String| s.to_string())
         .ok_or_else(|| anyhow!("Vault role-id is required"))?;
 
     // vault url
-    let vurl = matches
+    let vault_url = matches
         .get_one::<String>("vault-url")
         .map(|s: &String| s.to_string())
         .ok_or_else(|| anyhow!("Vault URL is required"))?;
 
-    let mut global_args = GlobalArgs::new(vurl);
+    let mut global_args = GlobalArgs::new(vault_url);
 
     let vault_token: String;
 
     // if vault wrapped token try to unwrap
     if let Some(wrapped_token) = matches.get_one::<String>("vault-wrapped-token") {
-        let vsid = vault::unwrap(&global_args.vault_url, wrapped_token).await?;
-        (vault_token, _) = vault::approle_login(&global_args.vault_url, &vsid, &vrid).await?;
+        let vault_session_id = vault::unwrap(&global_args.vault_url, wrapped_token).await?;
+        (vault_token, _) =
+            vault::approle_login(&global_args.vault_url, &vault_session_id, &vault_role_id).await?;
     } else {
-        let vsid = matches
+        let vault_session_id = matches
             .get_one::<String>("vault-secret-id")
             .map(|s: &String| s.to_string())
             .ok_or_else(|| anyhow!("Vault secret-id is required"))?;
 
-        (vault_token, _) = vault::approle_login(&global_args.vault_url, &vsid, &vrid).await?;
+        (vault_token, _) =
+            vault::approle_login(&global_args.vault_url, &vault_session_id, &vault_role_id).await?;
     }
 
     global_args.set_token(Secret::new(vault_token));
@@ -76,17 +84,32 @@ pub async fn start() -> Result<(Action, GlobalArgs)> {
     let fmt_layer = fmt::layer()
         .with_file(true)
         .with_line_number(true)
-        .with_thread_ids(true)
-        .with_target(false);
+        .with_thread_ids(false)
+        .with_thread_names(false)
+        .with_target(false)
+        .pretty();
 
     // RUST_LOG=
     let env_filter = EnvFilter::builder()
         .with_default_directive(verbosity_level.into())
         .from_env_lossy();
 
+    // Filter out /health requests (no spans will be created)
+    let health_filter = filter::filter_fn(|metadata| {
+        metadata
+            .fields()
+            .field("path")
+            .as_ref()
+            .map(std::convert::AsRef::as_ref)
+            .map_or(
+                true,               // If there is no uri attr, pass through
+                |s| s != "/health", // If has uri + is not /health, pass through
+            )
+    });
+
     let subscriber = Registry::default()
         .with(fmt_layer)
-        .with(telemetry)
+        .with(telemetry.with_filter(health_filter))
         .with(env_filter);
 
     tracing::subscriber::set_global_default(subscriber)?;

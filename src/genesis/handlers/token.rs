@@ -37,7 +37,7 @@ pub struct ClientArgs {
     ),
     tag = "token",
 )]
-#[instrument]
+#[instrument(skip(pool, headers, query))]
 pub async fn token(
     Extension(pool): Extension<PgPool>,
     headers: HeaderMap,
@@ -86,7 +86,7 @@ pub async fn token(
         Ok(row) => row.get::<i32, _>("id"),
 
         Err(err) => {
-            error!("Failed to retrieve client id from database: {}", err);
+            debug!("Failed to retrieve client id from database: {}", err);
             0
         }
     };

@@ -7,7 +7,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{Connection, PgPool};
-use tracing::{debug, error, instrument};
+use tracing::{debug, error};
 use utoipa::ToSchema;
 
 #[derive(ToSchema, Serialize, Deserialize, Debug)]
@@ -28,7 +28,6 @@ pub struct Health {
     tag = "health",
 )]
 // axum handler for health
-#[instrument]
 pub async fn health(method: Method, pool: Extension<PgPool>) -> impl IntoResponse {
     let result = match pool.0.acquire().await {
         Ok(mut conn) => match conn.ping().await {
@@ -84,7 +83,7 @@ pub async fn health(method: Method, pool: Extension<PgPool>) -> impl IntoRespons
             headers
         })
         .map_err(|err| {
-            error!("Failed to parse X-App header: {}", err);
+            debug!("Failed to parse X-App header: {}", err);
         });
 
     // Unwrap the headers or provide a default value (empty headers) in case of an error

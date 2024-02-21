@@ -19,7 +19,6 @@ axum = { version = "0.7", features = ["tracing"] }
 built = { version = "0.7", features = ["git2"] }
 chrono = "0.4"
 clap = { version = "4", features = ["env"] }
-mac_address = "1.1.5"
 openssl = { version = "0.10", optional = true, features = ["vendored"] }
 opentelemetry = "0.21"
 opentelemetry-otlp = { version = "0.14", features = ["tls-roots", "tls"] }
@@ -42,9 +41,9 @@ tonic = "0.11"
 tower = "0.4"
 tower-http = { version = "0.5", features = [
     "trace",
-    "propagate-header",
-    "set-header",
     "cors",
+    "request-id",
+    "set-header",
 ] }
 tracing = "0.1"
 tracing-opentelemetry = "0.22"
