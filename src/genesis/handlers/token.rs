@@ -14,6 +14,8 @@ use ulid::Ulid;
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
+pub const TOKEN_EXPIRATION: i64 = 120; // 2 minutes
+
 #[derive(ToSchema, Serialize, Deserialize, Debug)]
 pub struct Token {
     token: String,
@@ -134,7 +136,8 @@ pub async fn token(
         Ok(_) => match tx.commit().await {
             Ok(()) => {
                 let expiration_time = Utc::now()
-                    + Duration::try_minutes(30).expect("Failed to add 30 minutes to current time");
+                    + Duration::try_seconds(TOKEN_EXPIRATION)
+                        .expect("Failed to create expiration time");
 
                 let token = Token {
                     token: token.to_string(),

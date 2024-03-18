@@ -1,3 +1,4 @@
+use crate::genesis::handlers::token::TOKEN_EXPIRATION;
 use axum::{extract::Extension, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
@@ -31,9 +32,9 @@ pub async fn verify(Extension(pool): Extension<PgPool>, payload: Json<Token>) ->
         }
     }
 
-    let query = "SELECT EXISTS(SELECT 1 FROM tokens WHERE id = $1::ulid AND id::timestamp > NOW() - INTERVAL '30 MINUTES') AS valid";
+    let query = format!("SELECT EXISTS(SELECT 1 FROM tokens WHERE id = $1::ulid AND id::timestamp > NOW() - INTERVAL '{TOKEN_EXPIRATION} seconds') AS valid");
 
-    match sqlx::query(query).bind(token).fetch_one(&pool).await {
+    match sqlx::query(&query).bind(token).fetch_one(&pool).await {
         Ok(row) => {
             let valid: bool = row.get("valid");
             if valid {
