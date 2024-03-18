@@ -25,3 +25,39 @@ Helps find(group) tokens for the same period of time but still unique.
 +----------------------------+-------------------------+
 
 ```
+
+Expire tokens by time using `pg_cron`
+
+```sql
+SELECT cron.schedule('*/30 * * * *', $$DELETE
+FROM tokens
+WHERE id::timestamp < NOW() - INTERVAL '120 seconds'$$);
+```
+
+Update the database of the cron job with the following SQL command:
+
+```sql
+UPDATE cron.job SET database='genesis' WHERE jobid=5;
+```
+
+Check the cron.job table with the following SQL command:
+
+```sql
+SELECT * FROM cron.job;
++-------+--------------+------------------------------------------------------+-----------+----------+----------+----------+--------+---------+
+| jobid | schedule     | command                                              | nodename  | nodeport | database | username | active | jobname |
+|-------+--------------+------------------------------------------------------+-----------+----------+----------+----------+--------+---------|
+| 2     | 0 0 * * *    | DELETE                                               | localhost | 5432     | postgres | postgres | True   | <null>  |
+|       |              |     FROM cron.job_run_details                        |           |          |          |          |        |         |
+|       |              |     WHERE end_time < now() - interval '7 days'       |           |          |          |          |        |         |
+| 5     | */30 * * * * | DELETE                                               | localhost | 5432     | genesis  | postgres | True   | <null>  |
+|       |              | FROM tokens                                          |           |          |          |          |        |         |
+|       |              | WHERE id::timestamp < NOW() - INTERVAL '120 seconds' |           |          |          |          |        |         |
++-------+--------------+------------------------------------------------------+-----------+----------+----------+----------+--------+---------+
+```
+
+Check the status of the cron job with the following SQL command:
+
+```sql
+SELECT * FROM cron.job_run_details order by start_time DESC limit 5;
+```
