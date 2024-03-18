@@ -133,7 +133,8 @@ pub async fn token(
     match result {
         Ok(_) => match tx.commit().await {
             Ok(()) => {
-                let expiration_time = Utc::now() + Duration::minutes(30);
+                let expiration_time = Utc::now()
+                    + Duration::try_minutes(30).expect("Failed to add 30 minutes to current time");
 
                 let token = Token {
                     token: token.to_string(),
