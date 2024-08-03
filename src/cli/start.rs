@@ -80,7 +80,7 @@ pub async fn start() -> Result<(Action, GlobalArgs)> {
         .with_version(env!("CARGO_PKG_VERSION"))
         .build();
 
-    global::set_tracer_provider(provider.clone());
+    global::set_tracer_provider(provider);
 
     let telemetry = OpenTelemetryLayer::new(tracer);
 
