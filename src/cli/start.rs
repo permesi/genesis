@@ -1,7 +1,7 @@
 use crate::cli::{actions::Action, commands, dispatch::handler, globals::GlobalArgs};
 use crate::vault;
 use anyhow::{anyhow, Context, Result};
-use opentelemetry::{trace::TracerProvider, KeyValue};
+use opentelemetry::{global, trace::TracerProvider, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{runtime::Tokio, trace::Config, Resource};
 use secrecy::Secret;
@@ -79,6 +79,8 @@ pub async fn start() -> Result<(Action, GlobalArgs)> {
         .tracer_builder("opentelemetry-otlp")
         .with_version(env!("CARGO_PKG_VERSION"))
         .build();
+
+    global::set_tracer_provider(provider.clone());
 
     let telemetry = OpenTelemetryLayer::new(tracer);
 
