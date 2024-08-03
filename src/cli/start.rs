@@ -1,9 +1,9 @@
 use crate::cli::{actions::Action, commands, dispatch::handler, globals::GlobalArgs};
 use crate::vault;
 use anyhow::{anyhow, Context, Result};
-use opentelemetry::KeyValue;
+use opentelemetry::{trace::TracerProvider, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{runtime::Tokio, trace, Resource};
+use opentelemetry_sdk::{runtime::Tokio, trace::Config, Resource};
 use secrecy::Secret;
 use std::time::Duration;
 use tracing::debug;
@@ -66,14 +66,19 @@ pub async fn start() -> Result<(Action, GlobalArgs)> {
         .tonic()
         .with_timeout(Duration::from_secs(3));
 
-    let tracer = opentelemetry_otlp::new_pipeline()
+    let provider = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(otlp_exporter)
-        .with_trace_config(trace::config().with_resource(Resource::new(vec![
+        .with_trace_config(Config::default().with_resource(Resource::new(vec![
             KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
             KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
         ])))
         .install_batch(Tokio)?;
+
+    let tracer = provider
+        .tracer_builder("opentelemetry-otlp")
+        .with_version(env!("CARGO_PKG_VERSION"))
+        .build();
 
     let telemetry = OpenTelemetryLayer::new(tracer);
 
