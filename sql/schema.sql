@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS clients CASCADE;
 CREATE TABLE clients (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    uuid UUID DEFAULT uuid_generate_v4()
+    uuid UUID DEFAULT uuid_generate_v4() UNIQUE
 );
 
 INSERT INTO clients (id, name, uuid) VALUES (0, 'unknown', '00000000-0000-0000-0000-000000000000');
