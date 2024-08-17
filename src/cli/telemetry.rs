@@ -24,7 +24,7 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
         .install_batch(Tokio)?;
 
     let tracer = provider
-        .tracer_builder("opentelemetry-otlp")
+        .tracer_builder(env!("CARGO_PKG_NAME"))
         .with_version(env!("CARGO_PKG_VERSION"))
         .build();
 
