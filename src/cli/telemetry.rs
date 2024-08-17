@@ -30,7 +30,7 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     global::set_tracer_provider(provider);
 
-    let telemetry = OpenTelemetryLayer::new(tracer);
+    let otel_layer = OpenTelemetryLayer::new(tracer);
 
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -47,7 +47,7 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     let subscriber = Registry::default()
         .with(fmt_layer)
-        .with(telemetry)
+        .with(otel_layer)
         .with(env_filter);
 
     Ok(tracing::subscriber::set_global_default(subscriber)?)
