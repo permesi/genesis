@@ -84,12 +84,27 @@ pub async fn token(
 
     // get client id from the payload
     let query = "SELECT id FROM clients WHERE uuid = $1";
-    let client_id = match sqlx::query(query).bind(client_uuid).fetch_one(&pool).await {
-        Ok(row) => row.get::<i32, _>("id"),
+    let client_id_result = match sqlx::query(query).bind(client_uuid).fetch_one(&pool).await {
+        Ok(row) => row.try_get::<i32, _>("id").map_err(|err| {
+            error!("Failed to retrieve or convert ID: {}", err);
+            err
+        }),
 
         Err(err) => {
             debug!("Failed to retrieve client id from database: {}", err);
-            0
+            Err(err)
+        }
+    };
+
+    let client_id = match client_id_result {
+        Ok(id) => id,
+        Err(err) => {
+            error!("Failed to retrieve client id: {}", err);
+
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to retrieve client id".to_string(),
+            ));
         }
     };
 
