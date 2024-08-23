@@ -38,7 +38,7 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
         .with_thread_ids(false)
         .with_thread_names(false)
         .with_target(false)
-        .pretty();
+        .json();
 
     // RUST_LOG=
     let env_filter = EnvFilter::builder()
