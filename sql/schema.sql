@@ -30,8 +30,7 @@ CREATE TABLE metadata (
     id ulid PRIMARY KEY REFERENCES tokens(id) ON DELETE CASCADE,
     ip_address INET,
     country CHAR(2),
-    user_agent text,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    user_agent text
 );
 
 CREATE INDEX idx_metadata_country ON metadata(country);
