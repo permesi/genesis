@@ -1,4 +1,4 @@
-FROM messense/rust-musl-cross:x86_64-musl as builder
+FROM messense/rust-musl-cross:x86_64-musl AS builder
 
 RUN apt-get update && \
     apt-get install -y git libssl-dev pkg-config && \

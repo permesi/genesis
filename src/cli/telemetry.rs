@@ -2,14 +2,14 @@ use anyhow::Result;
 use opentelemetry::{global, trace::TracerProvider, KeyValue};
 use opentelemetry_appender_tracing::layer;
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{logs::LoggerProvider, runtime::Tokio, trace::Config, Resource};
+use opentelemetry_sdk::{runtime::Tokio, trace::Config, Resource};
 use std::time::Duration;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
 /// Start the telemetry layer
 /// # Errors
-/// Will return an error if the vault role-id or vault url is not provided
+/// Will return an error if the telemetry layer fails to start
 pub fn init(verbosity_level: tracing::Level) -> Result<()> {
     let tracer_exporter = opentelemetry_otlp::new_exporter()
         .tonic()
@@ -33,18 +33,14 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     let otel_trace_layer = OpenTelemetryLayer::new(tracer);
 
-    let log_exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_timeout(Duration::from_secs(3))
-        .build_log_exporter()?;
-
-    let log_provider = LoggerProvider::builder()
+    let log_provider = opentelemetry_otlp::new_pipeline()
+        .logging()
         .with_resource(Resource::new(vec![KeyValue::new(
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
         )]))
-        .with_simple_exporter(log_exporter)
-        .build();
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
+        .install_batch(Tokio)?;
 
     let otel_logs_layer = layer::OpenTelemetryTracingBridge::new(&log_provider);
 
