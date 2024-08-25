@@ -1,7 +1,8 @@
 use anyhow::Result;
 use opentelemetry::{global, trace::TracerProvider, KeyValue};
+use opentelemetry_appender_tracing::layer;
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{runtime::Tokio, trace::Config, Resource};
+use opentelemetry_sdk::{logs::LoggerProvider, runtime::Tokio, trace::Config, Resource};
 use std::time::Duration;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
@@ -10,13 +11,13 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 /// # Errors
 /// Will return an error if the vault role-id or vault url is not provided
 pub fn init(verbosity_level: tracing::Level) -> Result<()> {
-    let otlp_exporter = opentelemetry_otlp::new_exporter()
+    let tracer_exporter = opentelemetry_otlp::new_exporter()
         .tonic()
         .with_timeout(Duration::from_secs(3));
 
     let provider = opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(otlp_exporter)
+        .with_exporter(tracer_exporter)
         .with_trace_config(Config::default().with_resource(Resource::new(vec![
             KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
             KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
@@ -30,7 +31,22 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     global::set_tracer_provider(provider);
 
-    let otel_layer = OpenTelemetryLayer::new(tracer);
+    let otel_trace_layer = OpenTelemetryLayer::new(tracer);
+
+    let log_exporter = opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_timeout(Duration::from_secs(3))
+        .build_log_exporter()?;
+
+    let log_provider = LoggerProvider::builder()
+        .with_resource(Resource::new(vec![KeyValue::new(
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+        )]))
+        .with_simple_exporter(log_exporter)
+        .build();
+
+    let otel_logs_layer = layer::OpenTelemetryTracingBridge::new(&log_provider);
 
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -47,7 +63,8 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     let subscriber = Registry::default()
         .with(fmt_layer)
-        .with(otel_layer)
+        .with(otel_trace_layer)
+        .with(otel_logs_layer)
         .with(env_filter);
 
     Ok(tracing::subscriber::set_global_default(subscriber)?)
