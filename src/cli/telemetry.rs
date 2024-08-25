@@ -11,38 +11,38 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 /// # Errors
 /// Will return an error if the telemetry layer fails to start
 pub fn init(verbosity_level: tracing::Level) -> Result<()> {
-    let tracer_exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_timeout(Duration::from_secs(3));
-
-    let provider = opentelemetry_otlp::new_pipeline()
+    let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(tracer_exporter)
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_timeout(Duration::from_secs(3)),
+        )
         .with_trace_config(Config::default().with_resource(Resource::new(vec![
             KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
             KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
         ])))
         .install_batch(Tokio)?;
 
-    let tracer = provider
+    let tracer = tracer_provider
         .tracer_builder(env!("CARGO_PKG_NAME"))
         .with_version(env!("CARGO_PKG_VERSION"))
         .build();
 
-    global::set_tracer_provider(provider);
+    global::set_tracer_provider(tracer_provider);
 
     let otel_trace_layer = OpenTelemetryLayer::new(tracer);
 
-    let log_provider = opentelemetry_otlp::new_pipeline()
+    let logger = opentelemetry_otlp::new_pipeline()
         .logging()
         .with_resource(Resource::new(vec![KeyValue::new(
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
         )]))
-        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
+        .with_exporter(opentelemetry_otlp::new_exporter().http())
         .install_batch(Tokio)?;
 
-    let otel_logs_layer = layer::OpenTelemetryTracingBridge::new(&log_provider);
+    let otel_logs_layer = layer::OpenTelemetryTracingBridge::new(&logger);
 
     let fmt_layer = fmt::layer()
         .with_file(true)
