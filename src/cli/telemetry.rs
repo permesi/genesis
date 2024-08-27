@@ -1,6 +1,5 @@
 use anyhow::Result;
 use opentelemetry::{global, trace::TracerProvider, KeyValue};
-use opentelemetry_appender_tracing::layer;
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{runtime::Tokio, trace::Config, Resource};
 use std::time::Duration;
@@ -33,17 +32,6 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     let otel_trace_layer = OpenTelemetryLayer::new(tracer);
 
-    let logger = opentelemetry_otlp::new_pipeline()
-        .logging()
-        .with_resource(Resource::new(vec![KeyValue::new(
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION"),
-        )]))
-        .with_exporter(opentelemetry_otlp::new_exporter().http())
-        .install_batch(Tokio)?;
-
-    let otel_logs_layer = layer::OpenTelemetryTracingBridge::new(&logger);
-
     let fmt_layer = fmt::layer()
         .with_file(true)
         .with_line_number(true)
@@ -53,15 +41,17 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
         .json();
 
     // RUST_LOG=
-    let env_filter = EnvFilter::builder()
+    let filter = EnvFilter::builder()
         .with_default_directive(verbosity_level.into())
-        .from_env_lossy();
+        .from_env_lossy()
+        .add_directive("hyper=error".parse()?)
+        .add_directive("tokio=error".parse()?)
+        .add_directive("reqwest=error".parse()?);
 
     let subscriber = Registry::default()
         .with(fmt_layer)
         .with(otel_trace_layer)
-        .with(otel_logs_layer)
-        .with(env_filter);
+        .with(filter);
 
     Ok(tracing::subscriber::set_global_default(subscriber)?)
 }
