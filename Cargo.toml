@@ -16,10 +16,8 @@ build = "build.rs"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.7", features = ["tracing"] }
-built = { version = "0.7", features = ["git2"] }
 chrono = "0.4"
 clap = { version = "4", features = ["env"] }
-openssl = { version = "0.10", optional = true, features = ["vendored"] }
 opentelemetry = "0.24"
 opentelemetry-otlp = { version = "0.17", features = ["tls-roots", "tls"] }
 opentelemetry_sdk = { version = "0.24", features = ["rt-tokio"] }
@@ -37,7 +35,6 @@ sqlx = { version = "0.8", features = [
 ] }
 temp-env = "0.3.6"
 tokio = { version = "1", features = ["full"] }
-tonic = "0.12"
 tower = "0.5"
 tower-http = { version = "0.5", features = [
     "trace",
