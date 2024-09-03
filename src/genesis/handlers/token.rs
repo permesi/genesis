@@ -6,9 +6,8 @@ use axum::{
 };
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row};
-use std::env;
-use std::net::IpAddr;
+use sqlx::{postgres::PgDatabaseError, PgPool, Row};
+use std::{env, net::IpAddr, process};
 use tracing::{debug, error, instrument};
 use ulid::Ulid;
 use utoipa::{IntoParams, ToSchema};
@@ -91,7 +90,23 @@ pub async fn token(
         }),
 
         Err(err) => {
-            debug!("Failed to retrieve client ID from database: {}", err);
+            match err {
+                sqlx::Error::Database(db_err)
+                    if db_err
+                        .as_error()
+                        .downcast_ref::<PgDatabaseError>()
+                        .map(PgDatabaseError::code)
+                        == Some("42501") =>
+                {
+                    // will terminate the program with exit code 1 and helps to get a new vault
+                    // token, usful when modifying the DB schema
+                    error!("DB Error 42501: {}", db_err.message());
+                    process::exit(1); // Terminate the program with exit code 1
+                }
+                _ => {
+                    debug!("Failed to retrieve client ID from database: {}", err);
+                }
+            }
             0
         }
     };
