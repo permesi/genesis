@@ -100,7 +100,10 @@ pub async fn token(
                 {
                     // will terminate the program with exit code 1 and helps to get a new vault
                     // token, usful when modifying the DB schema
-                    error!("DB Error 42501: {}", db_err.message());
+                    error!(
+                        "DB Error 42501 - Insufficient privilege: {}",
+                        db_err.message()
+                    );
                     process::exit(1); // Terminate the program with exit code 1
                 }
                 _ => {
