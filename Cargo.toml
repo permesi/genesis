@@ -1,6 +1,6 @@
 [package]
 name = "permesi-genesis"
-version = "0.1.10"
+version = "0.2.0"
 edition = "2021"
 authors = ["Team Permesi <team@permesi.dev>"]
 description = "Token Zero generator for permesi"
@@ -19,9 +19,9 @@ axum = { version = "0.7", features = ["tracing"] }
 chrono = "0.4"
 clap = { version = "4", features = ["env"] }
 openssl = { version = "0.10", optional = true, features = ["vendored"] }
-opentelemetry = "0.24"
-opentelemetry-otlp = { version = "0.17", features = ["tls-roots", "tls"] }
-opentelemetry_sdk = { version = "0.24", features = ["rt-tokio"] }
+opentelemetry = "0.26"
+opentelemetry-otlp = { version = "0.26", features = ["tls-roots", "tls"] }
+opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
 rand = "0.8.5"
 reqwest = { version = "0.12", features = ["json"] }
 secrecy = "0.8"
@@ -37,20 +37,20 @@ sqlx = { version = "0.8", features = [
 temp-env = "0.3.6"
 tokio = { version = "1", features = ["full"] }
 tower = "0.5"
-tower-http = { version = "0.5", features = [
+tower-http = { version = "0.6", features = [
     "trace",
     "cors",
     "request-id",
     "set-header",
 ] }
 tracing = "0.1"
-tracing-opentelemetry = "0.25"
+tracing-opentelemetry = "0.27"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 ulid = "1.1"
 url = "2.5"
-utoipa = { version = "4", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "7", features = ["axum"] }
-uuid = { version = "1.10", features = ["v1", "v4"] }
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "8", features = ["axum"] }
+uuid = { version = "1.11", features = ["v1", "v4", "v7"] }
 
 [build-dependencies]
 built = { version = "0.7", features = ["git2"] }
