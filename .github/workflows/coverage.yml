@@ -13,17 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Run tests
         run: cargo test --verbose -- --nocapture
         env:
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
-            -Cpanic=abort -Zpanic_abort_tests
-          RUSTDOCFLAGS: -Zprofile -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
-            -Cpanic=abort -Zpanic_abort_tests
+          RUSTFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
+          RUSTDOCFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
 
       - name: rust-grcov
         uses: actions-rs/grcov@v0.1
