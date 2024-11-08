@@ -2,6 +2,8 @@
 
 -- Ensure necessary extensions are enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- https://github.com/pksunkara/pgx_ulid
+CREATE EXTENSION IF NOT EXISTS ulid;
 
 -- Create the table for clients
 DROP TABLE IF EXISTS clients CASCADE;
@@ -18,14 +20,14 @@ VALUES (0, 'unknown', '00000000-0000-0000-0000-000000000000');
 -- Create the table for the tokens
 DROP TABLE IF EXISTS tokens CASCADE;
 CREATE TABLE tokens (
-    id UUID NOT NULL PRIMARY KEY,
+    id ulid NOT NULL DEFAULT gen_ulid() PRIMARY KEY,
     client_id SMALLINT NOT NULL REFERENCES clients(id) ON DELETE CASCADE
 );
 
 -- Create the table for the metadata
 DROP TABLE IF EXISTS metadata;
 CREATE TABLE metadata (
-    id UUID PRIMARY KEY REFERENCES tokens(id) ON DELETE CASCADE,
+    id ulid PRIMARY KEY REFERENCES tokens(id) ON DELETE CASCADE,
     ip_address INET,
     country CHAR(2),
     user_agent text
