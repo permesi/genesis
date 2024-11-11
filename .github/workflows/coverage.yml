@@ -24,14 +24,14 @@ jobs:
           RUSTFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
           RUSTDOCFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
 
-      - name: List profile files
-        run: ls -al
-
-      - name: rust-grcov
-        uses: actions-rs/grcov@v0.1
-
-      - name: Upload to codecov.io
-        uses: codecov/codecov-action@v4
+      - name: Run grcov
+        run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing
+          --ignore '../**' --ignore '/*' -o coverage.lcov
+      - uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.lcov
+          flags: rust
+          fail_ci_if_error: true
 
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@v2
