@@ -1,3 +1,7 @@
 ---
+branch: true
 output-type: lcov
 output-path: ./lcov.info
+ignore:
+  - /*
+  - ../*

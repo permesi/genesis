@@ -19,7 +19,8 @@ jobs:
         run: cargo test --verbose -- --nocapture
         env:
           RUST_BACKTRACE: full
-          CARGO_INCREMENTAL: '0'
+          CARGO_INCREMENTAL: 0
+          LLVM_PROFILE_FILE: cargo-test-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
           RUSTDOCFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
 
