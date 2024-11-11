@@ -68,9 +68,12 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
         env:
-          CARGO_INCREMENTAL: '0'
+          CARGO_INCREMENTAL: 0
+          LLVM_PROFILE_FILE: cargo-test-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
           RUSTDOCFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
+      - name: List profile files
+        run: ls -al
 
       - name: rust-grcov
         uses: actions-rs/grcov@v0.1
