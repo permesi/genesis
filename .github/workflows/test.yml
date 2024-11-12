@@ -64,6 +64,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
 
       - name: Run tests
         run: cargo test --verbose
