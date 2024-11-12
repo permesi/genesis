@@ -1,36 +1,36 @@
 use anyhow::Result;
-use opentelemetry::{global, trace::TracerProvider, KeyValue};
+use opentelemetry::{global, trace::Tracer, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{runtime::Tokio, trace::Config, Resource};
+use opentelemetry_sdk::{
+    trace::{Config, TracerProvider},
+    Resource,
+};
 use std::time::Duration;
-use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
 /// Start the telemetry layer
 /// # Errors
 /// Will return an error if the telemetry layer fails to start
 pub fn init(verbosity_level: tracing::Level) -> Result<()> {
-    let tracer_provider = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_timeout(Duration::from_secs(3)),
-        )
-        .with_trace_config(Config::default().with_resource(Resource::new(vec![
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .with_timeout(Duration::from_secs(3))
+        .build()?;
+
+    let tracer_provider = TracerProvider::builder()
+        .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+        .with_config(Config::default().with_resource(Resource::new(vec![
             KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
             KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
         ])))
-        .install_batch(Tokio)?;
-
-    let tracer = tracer_provider
-        .tracer_builder(env!("CARGO_PKG_NAME"))
-        .with_version(env!("CARGO_PKG_VERSION"))
         .build();
 
     global::set_tracer_provider(tracer_provider);
 
-    let otel_trace_layer = OpenTelemetryLayer::new(tracer);
+    let tracer = global::tracer(env!("CARGO_PKG_NAME"));
+
+    //    let otel_tracer_layer = OpenTelemetryLayer::with_tracer(tracer);
+    let otel_tracer_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     let fmt_layer = fmt::layer()
         .with_file(true)
@@ -50,7 +50,7 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
 
     let subscriber = Registry::default()
         .with(fmt_layer)
-        .with(otel_trace_layer)
+        .with(otel_tracer_layer)
         .with(filter);
 
     Ok(tracing::subscriber::set_global_default(subscriber)?)

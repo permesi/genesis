@@ -19,9 +19,9 @@ axum = { version = "0.7", features = ["tracing"] }
 chrono = "0.4"
 clap = { version = "4", features = ["env"] }
 openssl = { version = "0.10", optional = true, features = ["vendored"] }
-opentelemetry = "0.26"
-opentelemetry-otlp = { version = "0.26", features = ["tls-roots", "tls"] }
-opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
+opentelemetry = "0.27"
+opentelemetry-otlp = { version = "0.27", features = ["tls-roots", "tls"] }
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
 rand = "0.8.5"
 reqwest = { version = "0.12", features = ["json"] }
 secrecy = "0.8"
@@ -44,7 +44,7 @@ tower-http = { version = "0.6", features = [
     "set-header",
 ] }
 tracing = "0.1"
-tracing-opentelemetry = "0.27"
+tracing-opentelemetry = "0.28"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 ulid = "1.1"
 url = "2.5"
