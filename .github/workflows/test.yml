@@ -83,11 +83,12 @@ jobs:
       - name: Run grcov
         run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing
           --ignore '../**' --ignore '/*' -o coverage.lcov
+
       - uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.lcov
           flags: rust
-          fail_ci_if_error: true
 
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@v2
