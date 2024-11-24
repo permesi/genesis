@@ -1,7 +1,7 @@
 use crate::cli::{actions::Action, commands, dispatch::handler, globals::GlobalArgs, telemetry};
 use crate::vault;
 use anyhow::{anyhow, Context, Result};
-use secrecy::Secret;
+use secrecy::SecretString;
 use tracing::debug;
 
 /// Start the CLI
@@ -41,7 +41,7 @@ pub async fn start() -> Result<(Action, GlobalArgs)> {
             vault::approle_login(&global_args.vault_url, &vault_session_id, &vault_role_id).await?;
     }
 
-    global_args.set_token(Secret::new(vault_token));
+    global_args.set_token(SecretString::from(vault_token));
 
     // get database username and password from Vault
     vault::database::database_creds(&mut global_args)
