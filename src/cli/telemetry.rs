@@ -1,17 +1,14 @@
 use anyhow::Result;
-use opentelemetry::{global, trace::Tracer, KeyValue};
+use opentelemetry::{global, trace::TracerProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
-    trace::{Config, TracerProvider},
+    trace::{Config, Tracer, TracerProvider},
     Resource,
 };
 use std::time::Duration;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
-/// Start the telemetry layer
-/// # Errors
-/// Will return an error if the telemetry layer fails to start
-pub fn init(verbosity_level: tracing::Level) -> Result<()> {
+fn init_tracer() -> Result<Tracer> {
     let exporter = opentelemetry_otlp::SpanExporter::builder()
         .with_tonic()
         .with_timeout(Duration::from_secs(3))
@@ -25,11 +22,17 @@ pub fn init(verbosity_level: tracing::Level) -> Result<()> {
         ])))
         .build();
 
-    global::set_tracer_provider(tracer_provider);
+    global::set_tracer_provider(tracer_provider.clone());
 
-    let tracer = global::tracer(env!("CARGO_PKG_NAME"));
+    Ok(tracer_provider.tracer(env!("CARGO_PKG_NAME")))
+}
 
-    //    let otel_tracer_layer = OpenTelemetryLayer::with_tracer(tracer);
+/// Start the telemetry layer
+/// # Errors
+/// Will return an error if the telemetry layer fails to start
+pub fn init(verbosity_level: tracing::Level) -> Result<()> {
+    let tracer = init_tracer()?;
+
     let otel_tracer_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     let fmt_layer = fmt::layer()

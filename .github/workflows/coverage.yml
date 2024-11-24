@@ -2,10 +2,10 @@
 name: Coverage
 
 on:
-  push:
-    branches-ignore:
-      - develop
-      - main
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: true
 
 jobs:
   coverage:
@@ -22,7 +22,7 @@ jobs:
         env:
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0
-          LLVM_PROFILE_FILE: cargo-test-%p-%m.profraw
+          LLVM_PROFILE_FILE: coverage-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
           RUSTDOCFLAGS: -Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off
 
