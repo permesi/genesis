@@ -2,7 +2,7 @@ use anyhow::Result;
 use opentelemetry::{global, trace::TracerProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
-    trace::{Config, Tracer, TracerProvider},
+    trace::{Tracer, TracerProvider},
     Resource,
 };
 use std::time::Duration;
@@ -16,10 +16,10 @@ fn init_tracer() -> Result<Tracer> {
 
     let tracer_provider = TracerProvider::builder()
         .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
-        .with_config(Config::default().with_resource(Resource::new(vec![
+        .with_resource(Resource::new(vec![
             KeyValue::new("service.name", env!("CARGO_PKG_NAME")),
             KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
-        ])))
+        ]))
         .build();
 
     global::set_tracer_provider(tracer_provider.clone());
